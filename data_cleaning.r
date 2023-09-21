@@ -5,24 +5,27 @@
 # Term: 2022 Winter
 ###########################################
 
+library(readxl)
 
 # Load Data ---------------------------------------------------------------
 
+data <- read_excel("~/Desktop/EPL-2018-2019-2021-All-Data.xlsx")
+View(data)
+
+data$result <- ifelse(data$total_goal_count > data$total)
 
 
+# Initial Analysis ---------------------------------------------------
 
+dim(data)
+summary(data)
 
-
-# Initial Visualisation ---------------------------------------------------
-
-
-
-
+dist(data$)
 
 
 # Cleansing ---------------------------------------------------------------
 
-
+data$stadium_name <- as.factor(data$stadium_name)
 
 
 
