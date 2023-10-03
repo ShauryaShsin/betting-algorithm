@@ -150,6 +150,8 @@ sum(test_data_LPM1$loss)
 
 
 
+
+
 # Model 2: LPM Few Variables (LPM2) ---------------------------------------------------------------
 
 data_m2 <- read_excel("~/Desktop/EPL-2018-2019-2021-All-Data.xlsx")
@@ -272,6 +274,8 @@ test_data_LPM2$loss <- ifelse(test_data_LPM2$winnings < 0, test_data_LPM2$winnin
 sum(test_data_LPM2$winnings)
 sum(test_data_LPM2$won)
 sum(test_data_LPM2$loss)
+
+
 
 
 
@@ -407,6 +411,8 @@ test_data_LPM1$loss <- ifelse(test_data_LPM1$winnings < 0, test_data_LPM1$winnin
 sum(test_data_LPM1$winnings)
 sum(test_data_LPM1$won)
 sum(test_data_LPM1$loss)
+
+
 
 
 
