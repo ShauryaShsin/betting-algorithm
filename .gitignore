@@ -7,7 +7,7 @@ venv
 .env
 
 # Data
-src/data/
+data/
 .env
 data/raw/
 data/processed/
