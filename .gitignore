@@ -8,3 +8,7 @@ venv
 
 # Data
 src/data/
+.env
+data/raw/
+data/processed/
+mlruns/
