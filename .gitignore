@@ -2,3 +2,13 @@
 .Rhistory
 .RData
 .Ruserdata
+
+venv
+.env
+
+# Data
+data/
+.env
+data/raw/
+data/processed/
+mlruns/
