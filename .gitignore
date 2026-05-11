@@ -12,15 +12,3 @@ data/
 data/raw/
 data/processed/
 mlruns/
-
-# Python cache
-__pycache__/
-*.pyc
-
-# MLflow local DB
-mlflow.db
-
-# Pytest cache
-.pytest_cache/
-.coverage
-htmlcov/
