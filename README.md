@@ -1,6 +1,8 @@
 # EPL Match Prediction System
 
-A Premier League home-win prediction model ported from a university research project into a production ML system. Five model architectures compete for champion status via MLflow's Model Registry. Pre-match odds are tracked so every bet recommendation can be reconciled against actual results for a live ROI figure.
+A small EPL match-prediction service. It produces probability-calibrated pre-match bets, reconciles them against actual results for a live ROI figure, and runs on a schedule — refresh data, retrain when warranted, score the upcoming matchweek, monitor drift.
+
+Current scope is **EPL home-win**. The architecture (registry naming, feature sets, ingest) is designed so additional bet types and additional leagues plug in without a rewrite. See `CLAUDE.md` for the extensibility seams and the phased roadmap.
 
 ## Architecture
 
@@ -95,17 +97,11 @@ pytest tests/ -v --cov=src
 
 44 tests covering feature engineering, the SQLite P&L tracker, ROI/classify logic, and FastAPI endpoints (mocked registry calls).
 
-## Status
+## Roadmap
 
-- [x] Original R models (`legacy/`)
-- [x] Python port with MLflow tracking
-- [x] API data ingestion (football-data.co.uk + API-Football)
-- [x] Feature engineering module
-- [x] Multi-model training (LPM, GLM, XGBoost)
-- [x] Champion/challenger deployment via MLflow Model Registry
-- [x] Walk-forward backtester with equity curve artifact
-- [x] Pre-match prediction tracker (SQLite) + live P&L
-- [x] FastAPI serving endpoint
-- [x] Test suite (44 tests)
-- [ ] Drift monitoring (Evidently AI)
-- [ ] GitHub Actions CI/CD
+- **Phase 1 — Operational hardening (now):** Evidently AI drift monitoring; scheduled retraining + scheduled matchweek scoring; GitHub Actions CI.
+- **Phase 2 — Model scope:** additional EPL bet types (draw, away-win, O/U 2.5, BTTS); calibration check.
+- **Phase 3 — League scope:** generalise ingest + features + registry to a second league.
+- **Phase 4 — Sharing:** lightweight auth, multi-user prediction view, always-on hosting.
+
+`legacy/` contains the original R model the Python pipeline was ported from. `data/legacy/` contains historical CSVs and cleaning notebooks.
