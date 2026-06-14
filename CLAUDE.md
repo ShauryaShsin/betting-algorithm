@@ -42,9 +42,9 @@ The previous home-win-focused roadmap is superseded. New phases:
 
 - **Phase 1 — Platform foundations (now):**
   - SQLite schema (`matches`, `odds_snapshots`, `features`, `strategies`, `backtest_runs`, `live_predictions`, `settled_bets`) + migrations.
-  - `platform/ingest/` — `ingest_matches` (football-data.co.uk) and `ingest_odds` (API-Football), idempotent, parameterised by `(league, season, book, market)`.
-  - `platform/features/` — feature modules (PPG, implied prob, odds ratio to start; Elo / xG / rest later).
-  - `platform/backtest/` — walk-forward harness with leakage guard, transaction costs, Kelly-aware sizing interface.
+  - `bsrp/ingest/` — `ingest_matches` (football-data.co.uk) and `ingest_odds` (API-Football), idempotent, parameterised by `(league, season, book, market)`.
+  - `bsrp/features/` — feature modules (PPG, implied prob, odds ratio to start; Elo / xG / rest later).
+  - `bsrp/backtest/` — walk-forward harness with leakage guard, transaction costs, Kelly-aware sizing interface.
 - **Phase 2 — Strategy abstraction + `strategy_v1`:**
   - Define `Strategy` as a versioned config object (feature set + model URI + sizing rule + market).
   - Port the existing XGB home-win as `strategy_v1`. End-to-end backtest under honest conditions.
@@ -69,11 +69,11 @@ Secrets go in `.env` (gitignored). Required keys:
 - `API_KEY` — RapidAPI key for API-Football
 - `HOST` — defaults to `api-football-v1.p.rapidapi.com`
 
-MLflow uses a local SQLite backend (`mlflow.db`) and artifact store (`mlruns/`, gitignored). The platform's own data lives in a separate SQLite DB (`platform.db`, also gitignored, created by Phase 1).
+MLflow uses a local SQLite backend (`mlflow.db`) and artifact store (`mlruns/`, gitignored). The platform's own data lives in a separate SQLite DB (`bsrp.db`, also gitignored, created by Phase 1).
 
 ## Common Commands
 
-> **Note:** the commands below operate on the legacy `src/` pipeline. They still work today and will be deleted in Phase 2. New `platform/` commands will be documented here as each phase lands.
+> **Note:** the commands below operate on the legacy `src/` pipeline. They still work today and will be deleted in Phase 2. New `bsrp/` commands will be documented here as each phase lands.
 
 ```bash
 # Ingest recent completed fixtures (refreshes current-season CSV)
@@ -116,11 +116,14 @@ Data flow today:
 5. `src/monitor.py` → SQLite (`data/predictions.db`) prediction + result reconciliation, live P&L.
 6. `src/serve.py` → FastAPI + CLI batch predictor.
 
-### Target (`platform/`, Phase 1 onward)
+### Target (`bsrp/`, Phase 1 onward)
+
+The package is named `bsrp` (Betting Strategy Research Platform) rather than `platform` to avoid shadowing Python's stdlib `platform` module — using a stdlib name as a package would silently break any code that imports stdlib `platform` from inside the repo.
 
 ```
-platform/
-  db/            SQLite schema + migrations
+bsrp/
+  __main__.py    python -m bsrp <command>
+  db/            SQLite schema + migrations (Phase 1, done)
   ingest/        ingest_matches.py, ingest_odds.py (parameterised by league/season/book/market)
   features/      one module per feature family (ppg.py, implied_prob.py, elo.py, xg.py, …)
   strategies/    Strategy config dataclass + registered strategies
@@ -128,6 +131,12 @@ platform/
   serve/         CLI batch scorer (FastAPI optional, later)
   monitor/       drift + live P&L per strategy
   ui/            Streamlit pages
+```
+
+Phase 1 commands (now available):
+
+```bash
+python -m bsrp init-db          # create or upgrade the local SQLite store at bsrp.db
 ```
 
 Registered unit in MLflow becomes the **strategy**, not the model: `strategy/{slug}@champion`. The model is one component inside the strategy artifact, alongside the feature set, sizing rule, and target market.

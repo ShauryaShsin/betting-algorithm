@@ -8,7 +8,7 @@ A local pipeline for ingesting match data + odds, defining betting strategies, b
 
 The existing XGBoost home-win setup is `strategy_v1`. Future strategies (Elo + rest days → Poisson goals → fractional Kelly → over 2.5, etc.) are added as a small feature module + a strategy config — the platform itself doesn't change. Every strategy shares the same ingest, the same walk-forward backtest harness, the same UI for comparison.
 
-See `CLAUDE.md` for the target architecture (`platform/` layout, registry naming, transition details).
+See `CLAUDE.md` for the target architecture (`bsrp/` package layout, registry naming, transition details).
 
 ## Status
 
@@ -16,7 +16,7 @@ The platform is being built greenfield. The legacy `src/` modules (`train.py`, `
 
 ## Roadmap
 
-- **Phase 1 — Platform foundations (now):** SQLite schema; `platform/ingest/` (matches + odds, parameterised by league/season/book/market); first feature modules (PPG, implied prob, odds ratio); walk-forward backtest harness with leakage guard, transaction costs, and Kelly-aware sizing.
+- **Phase 1 — Platform foundations (now):** SQLite schema; `bsrp/ingest/` (matches + odds, parameterised by league/season/book/market); first feature modules (PPG, implied prob, odds ratio); walk-forward backtest harness with leakage guard, transaction costs, and Kelly-aware sizing.
 - **Phase 2 — Strategy abstraction + `strategy_v1`:** versioned `Strategy` config; port the existing XGB home-win as `strategy_v1`; delete legacy `src/` modules + LPM/GLM model families.
 - **Phase 3 — Streamlit UI:** strategy gallery, strategy detail (equity curve + calibration + recent picks), this-week scoreboard, add-strategy flow.
 - **Phase 4 — Ops:** scheduled ingest + scheduled scoring; drift detection per strategy; GitHub Actions CI for tests + lint.
@@ -67,7 +67,12 @@ python src/monitor.py record-actuals
 python src/monitor.py report
 ```
 
-New `platform/` commands will be added here as Phase 1 lands.
+New `bsrp/` commands will be added here as Phase 1 lands. The package is named `bsrp` (not `platform`) so it doesn't shadow Python's stdlib `platform` module.
+
+```bash
+# Already available (Phase 1, just landed):
+python -m bsrp init-db          # create or upgrade the local SQLite store
+```
 
 ## MLflow UI
 
@@ -81,6 +86,6 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 pytest tests/ -v --cov=src
 ```
 
-44 tests cover the legacy `src/` modules — feature engineering, the SQLite P&L tracker, ROI/classify logic, and FastAPI endpoints (mocked registry calls). New tests will land alongside `platform/` modules.
+44 tests cover the legacy `src/` modules — feature engineering, the SQLite P&L tracker, ROI/classify logic, and FastAPI endpoints (mocked registry calls). 8 more cover the `bsrp/` SQLite store (Phase 1).
 
 `legacy/` contains the original R model the Python pipeline was ported from. `data/legacy/data/hist-data/processed/E0-*.csv` are the historical CSVs, which Phase 1 will use to bootstrap the SQLite store.

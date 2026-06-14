@@ -28,11 +28,11 @@ The platform is the product. Strategies are content. New theory → one feature 
 
 ## Roadmap
 
-- **Phase 1 — Platform foundations:** SQLite schema + migrations; `platform/ingest/` (matches + odds, parameterised); first feature modules (PPG, implied prob, odds ratio); walk-forward backtest harness with leakage guard + transaction costs + Kelly-aware sizing.
+- **Phase 1 — Platform foundations:** SQLite schema + migrations; `bsrp/ingest/` (matches + odds, parameterised); first feature modules (PPG, implied prob, odds ratio); walk-forward backtest harness with leakage guard + transaction costs + Kelly-aware sizing.
 - **Phase 2 — Strategy abstraction + `strategy_v1`:** versioned `Strategy` config; port XGB home-win as `strategy_v1`; delete legacy `src/train.py` / `src/serve.py` / `src/monitor.py` / `src/evaluate.py` + LPM/GLM model families.
 - **Phase 3 — Streamlit UI:** strategy gallery + detail + this-week + add-strategy.
 - **Phase 4 — Ops:** scheduled ingest + scheduled scoring; per-strategy drift; GH Actions CI.
 - **Phase 5 — Strategy expansion:** each new theory = one feature module + one strategy config.
 - **Phase 6 — Multi-league:** add a second league via config + ingest params, not code.
 
-See `CLAUDE.md` for the target `platform/` layout, the registry-naming scheme, and the file:line seams that still bake `epl-home-win` into the legacy `src/` modules.
+See `CLAUDE.md` for the `bsrp/` package layout, the registry-naming scheme, and the file:line seams that still bake `epl-home-win` into the legacy `src/` modules. The package is named `bsrp` (not `platform`) to avoid shadowing Python's stdlib `platform` module.
