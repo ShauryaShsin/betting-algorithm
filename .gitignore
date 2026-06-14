@@ -20,6 +20,9 @@ __pycache__/
 # MLflow local DB
 mlflow.db
 
+# BSRP local DB
+bsrp.db
+
 # Pytest cache
 .pytest_cache/
 .coverage
