@@ -1,49 +1,36 @@
-# EPL Match Prediction System
+# Betting-Strategy Research Platform
 
-A small EPL match-prediction service. It produces probability-calibrated pre-match bets, reconciles them against actual results for a live ROI figure, and runs on a schedule — refresh data, retrain when warranted, score the upcoming matchweek, monitor drift.
+A local pipeline for ingesting match data + odds, defining betting strategies, backtesting them honestly, and tracking live performance. Originally a port of a university EPL home-win model — now rescoped around the platform itself, with the original model becoming one strategy plugged in.
 
-Current scope is **EPL home-win**. The architecture (registry naming, feature sets, ingest) is designed so additional bet types and additional leagues plug in without a rewrite. See `CLAUDE.md` for the extensibility seams and the phased roadmap.
+## Core abstraction
 
-## Architecture
+> **Strategy = feature set + model + sizing rule + target market.**
 
-```
-football-data.co.uk  ──►  ingest.py  ──►  features.py  ──►  train.py
-API-Football (odds)                                              │
-                                                                 ▼
-                                                        MLflow Model Registry
-                                                        (epl-home-win@champion)
-                                                                 │
-                                              ┌──────────────────┼──────────────────┐
-                                              ▼                  ▼                  ▼
-                                         serve.py          evaluate.py         monitor.py
-                                    (FastAPI + CLI)     (walk-forward       (SQLite P&L
-                                                          backtest)           tracker)
-```
+The existing XGBoost home-win setup is `strategy_v1`. Future strategies (Elo + rest days → Poisson goals → fractional Kelly → over 2.5, etc.) are added as a small feature module + a strategy config — the platform itself doesn't change. Every strategy shares the same ingest, the same walk-forward backtest harness, the same UI for comparison.
 
-| Component | What it does |
-|-----------|-------------|
-| `src/ingest.py` | Fetches completed EPL results (football-data.co.uk, free) and upcoming fixture odds (API-Football, RapidAPI) |
-| `src/features.py` | Feature engineering — `AwayPPG_Last5`, implied probabilities, odds ratio — shared by training and serving |
-| `src/train.py` | Trains any of 5 model types with MLflow tracking; promotes champion if it beats current on both accuracy and ROI |
-| `src/evaluate.py` | Walk-forward backtester — produces a cumulative ROI curve artifact in MLflow |
-| `src/monitor.py` | Persists pre-match predictions + actual results to SQLite; computes live P&L |
-| `src/serve.py` | FastAPI endpoint + CLI batch predictor; loads champion from registry |
+See `CLAUDE.md` for the target architecture (`platform/` layout, registry naming, transition details).
 
-## Models
+## Status
 
-Five architectures compete in the `epl-home-win` MLflow registry:
+The platform is being built greenfield. The legacy `src/` modules (`train.py`, `serve.py`, `monitor.py`, `evaluate.py`, plus LPM/GLM model families) still run today and will be deleted in Phase 2 of the roadmap below.
 
-| Type | Algorithm | Features |
-|------|-----------|---------|
-| `lpm2` | OLS (linear probability) | B365H, HomePPG_Last5 |
-| `lpm1` | OLS (linear probability) | All odds + both form + implied probs + ratio |
-| `glm2` | Logistic regression | ImpliedH, HomePPG_Last5 |
-| `glm1` | Logistic regression | All odds + both form + implied probs + ratio |
-| `xgb` | XGBoost | All odds + both form + implied probs + ratio |
+## Roadmap
 
-Current champion: **XGBoost** — 79.8% accuracy, 43.2% ROI (static hold-out).
+- **Phase 1 — Platform foundations (now):** SQLite schema; `platform/ingest/` (matches + odds, parameterised by league/season/book/market); first feature modules (PPG, implied prob, odds ratio); walk-forward backtest harness with leakage guard, transaction costs, and Kelly-aware sizing.
+- **Phase 2 — Strategy abstraction + `strategy_v1`:** versioned `Strategy` config; port the existing XGB home-win as `strategy_v1`; delete legacy `src/` modules + LPM/GLM model families.
+- **Phase 3 — Streamlit UI:** strategy gallery, strategy detail (equity curve + calibration + recent picks), this-week scoreboard, add-strategy flow.
+- **Phase 4 — Ops:** scheduled ingest + scheduled scoring; drift detection per strategy; GitHub Actions CI for tests + lint.
+- **Phase 5 — Strategy expansion:** each new theory = one feature module + one strategy config.
+- **Phase 6 — Multi-league:** add a second league via config + ingest params, not code.
 
-Betting strategy: fixed £100 stake when model probability ≥ threshold (default 0.5). ROI = net profit / total staked × 100.
+## Stack
+
+- **Storage:** SQLite (local, single file). Postgres deferred until multi-user.
+- **Modelling:** scikit-learn + XGBoost for `strategy_v1`; future strategies can bring their own.
+- **Tracking:** MLflow — the registered unit is the *strategy*, not the model.
+- **Backtest:** custom walk-forward harness (leakage guard + transaction costs + Kelly sizing). No static hold-out.
+- **Serving:** CLI batch scorer. FastAPI optional later.
+- **UI:** Streamlit.
 
 ## Setup
 
@@ -58,28 +45,29 @@ Required env vars (`.env`):
 API_KEY=<RapidAPI key for api-football-v1.p.rapidapi.com>
 ```
 
-## Usage
+## Usage (legacy `src/`)
+
+These commands operate on the legacy pipeline and will be deleted in Phase 2. Documented here so the system remains runnable during the transition.
 
 ```bash
 # Refresh current-season data
 python src/ingest.py recent
 
-# Train all 5 model types (promotes champion automatically)
+# Train (legacy multi-model)
 python src/train.py --all
 
-# Walk-forward backtest + ROI curve in MLflow
+# Walk-forward backtest (legacy)
 python src/evaluate.py compare
 
-# Score next matchweek + save predictions to DB
+# Score next matchweek (legacy)
 python src/serve.py predict
 
-# After matches play — record results and view live P&L
+# Record results and view live P&L (legacy)
 python src/monitor.py record-actuals
 python src/monitor.py report
-
-# Start FastAPI server
-python src/serve.py           # → localhost:8000
 ```
+
+New `platform/` commands will be added here as Phase 1 lands.
 
 ## MLflow UI
 
@@ -87,21 +75,12 @@ python src/serve.py           # → localhost:8000
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
-Experiments: `epl-models` (training runs), `epl-backtest` (walk-forward), `epl-monitoring` (live P&L snapshots).
-
 ## Tests
 
 ```bash
 pytest tests/ -v --cov=src
 ```
 
-44 tests covering feature engineering, the SQLite P&L tracker, ROI/classify logic, and FastAPI endpoints (mocked registry calls).
+44 tests cover the legacy `src/` modules — feature engineering, the SQLite P&L tracker, ROI/classify logic, and FastAPI endpoints (mocked registry calls). New tests will land alongside `platform/` modules.
 
-## Roadmap
-
-- **Phase 1 — Operational hardening (now):** Evidently AI drift monitoring; scheduled retraining + scheduled matchweek scoring; GitHub Actions CI.
-- **Phase 2 — Model scope:** additional EPL bet types (draw, away-win, O/U 2.5, BTTS); calibration check.
-- **Phase 3 — League scope:** generalise ingest + features + registry to a second league.
-- **Phase 4 — Sharing:** lightweight auth, multi-user prediction view, always-on hosting.
-
-`legacy/` contains the original R model the Python pipeline was ported from. `data/legacy/` contains historical CSVs and cleaning notebooks.
+`legacy/` contains the original R model the Python pipeline was ported from. `data/legacy/data/hist-data/processed/E0-*.csv` are the historical CSVs, which Phase 1 will use to bootstrap the SQLite store.
